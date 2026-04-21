@@ -59,25 +59,35 @@ DocSage is the opinionated, production version. Every answer is forced through a
 
 ## Quick start
 
+**One-command setup** (requires Docker, Python 3.11, Node 20, and pnpm):
+
 ```bash
 git clone https://github.com/bright-nwokoro/docsage-rag
 cd docsage-rag
 
-# Backend
-cd backend
-cp .env.example .env               # fill OPENAI_API_KEY, DATABASE_URL
-pip install -r requirements.txt
-alembic upgrade head
-uvicorn app.main:app --reload      # http://localhost:8000
+cp backend/.env.example backend/.env       # fill OPENAI_API_KEY
+cp frontend/.env.example frontend/.env.local
 
-# Frontend (new terminal)
-cd ../frontend
-cp .env.example .env.local         # fill NEXT_PUBLIC_API_URL
-pnpm install
-pnpm dev                           # http://localhost:3000
+make install     # backend pip + frontend pnpm
+make up          # start Postgres with pgvector
+make migrate     # apply schema
+make dev         # run backend (8000) + frontend (3000)
 ```
 
 Open http://localhost:3000, upload a PDF, start asking questions.
+
+**Under the hood** (what `make dev` actually does):
+
+```bash
+# Backend
+cd backend
+source .venv/bin/activate
+uvicorn app.main:app --reload --port 8000     # http://localhost:8000
+
+# Frontend (separate terminal)
+cd frontend
+pnpm dev                                      # http://localhost:3000
+```
 
 ## Environment variables
 
@@ -96,7 +106,7 @@ TOP_K=5
 **Frontend (`frontend/.env.local`)**
 
 ```bash
-NEXT_PUBLIC_API_URL=http://localhost:8000
+API_URL=http://localhost:8000
 ```
 
 ## Project structure
@@ -105,30 +115,45 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 docsage-rag/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py
+│   │   ├── main.py                 # FastAPI app factory
+│   │   ├── config.py               # pydantic-settings
+│   │   ├── db.py                   # async SQLAlchemy engine
+│   │   ├── models.py               # Doc + Chunk models (pgvector)
+│   │   ├── schemas.py              # pydantic API schemas
 │   │   ├── routes/
-│   │   │   ├── ingest.py          # PDF upload + chunking + embedding
-│   │   │   └── query.py           # hybrid retrieval + LLM call
-│   │   ├── core/
-│   │   │   ├── chunker.py         # semantic chunking logic
-│   │   │   ├── retriever.py       # vector + keyword hybrid retrieval
-│   │   │   └── citations.py       # structured citation schema
-│   │   └── models.py              # SQLAlchemy + pgvector models
-│   ├── alembic/                   # schema migrations
-│   ├── tests/
+│   │   │   ├── ingest.py           # POST /ingest
+│   │   │   ├── query.py            # POST /query (SSE)
+│   │   │   ├── docs.py             # GET /docs, DELETE /docs/{id}
+│   │   │   └── health.py           # GET /health
+│   │   └── core/
+│   │       ├── chunker.py          # token-budgeted sentence-aware chunker
+│   │       ├── embeddings.py       # batched OpenAI embeddings with retry
+│   │       ├── retriever.py        # parallel vector+keyword + RRF
+│   │       ├── citations.py        # schema + prompt + verifier
+│   │       ├── generator.py        # streaming + partial JSON parsing
+│   │       └── openai_client.py    # cached async client factory
+│   ├── alembic/                    # schema migrations
+│   ├── tests/{unit,integration,smoke,eval}/
 │   └── requirements.txt
 ├── frontend/
 │   ├── app/
-│   │   ├── page.tsx               # upload + chat interface
-│   │   └── api/                   # thin proxy to backend
+│   │   ├── page.tsx
+│   │   ├── layout.tsx
+│   │   └── api/                    # thin proxy to backend
 │   ├── components/
 │   │   ├── Chat.tsx
+│   │   ├── Message.tsx
 │   │   ├── CitationChip.tsx
-│   │   └── PdfDrop.tsx
+│   │   ├── PdfDrop.tsx
+│   │   └── DocList.tsx
+│   ├── lib/{sse.ts,types.ts,utils.ts}
 │   └── package.json
+├── docker-compose.yml              # Postgres + pgvector
+├── Makefile                        # install / up / migrate / dev / test
+├── .github/workflows/ci.yml
 ├── docs/
 │   ├── DEPLOY.md
-│   └── demo.gif
+│   └── superpowers/{specs,plans}/
 └── README.md
 ```
 
@@ -205,7 +230,14 @@ response = openai.chat.completions.create(
 )
 ```
 
-The backend then verifies each cited `(source, page)` pair actually exists in the retrieved chunks and drops anything that doesn't match. This makes hallucinated citations structurally impossible.
+The backend streams the partial JSON from OpenAI as it arrives: every time the
+`answer` field grows, we emit an SSE `answer_delta` event; every time a complete
+citation entry appears in `citations[]`, we emit an SSE `citation` event. When
+the stream ends, the backend verifies each cited `(source, page)` pair actually
+exists in the retrieved chunks and emits a final `done` event with only the
+verified set — the frontend reconciles and drops any previously-shown chips that
+failed verification. This makes hallucinated citations structurally impossible
+while keeping the UX fully streamed.
 
 ## Cost profile
 
@@ -222,18 +254,18 @@ Postgres storage is negligible (~50MB per 1,000 pages including embeddings).
 
 ## Deployment
 
-**Vercel (frontend):** one-click deploy from GitHub. Set `NEXT_PUBLIC_API_URL` to the Railway backend URL.
+**Vercel (frontend):** one-click deploy from GitHub. Set `API_URL` to the Railway backend URL.
 
 **Railway (backend + db):** provision a Postgres plugin, enable the `pgvector` extension, set env vars, deploy from the GitHub repo. See [`docs/DEPLOY.md`](docs/DEPLOY.md) for the step-by-step.
 
 ## Roadmap
 
+- [ ] Seed mode: ingest preloaded Next.js / Stripe / Kubernetes docs on deploy
 - [ ] Support for DOCX, TXT, MD, and HTML inputs
 - [ ] Multi-tenant isolation (one pgvector schema per client workspace)
 - [ ] Evaluation harness (RAGAS + custom golden set)
 - [ ] Re-ranker stage (Cohere Rerank or a local cross-encoder)
 - [ ] Self-hosted Ollama + pgvector mode for air-gapped clients
-- [ ] Streaming citations (send each citation as it's matched, don't wait for end of answer)
 
 ## Contributing
 

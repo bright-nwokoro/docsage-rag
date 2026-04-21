@@ -1,0 +1,11 @@
+DocSage Sample Document
+
+Page 1: Introduction
+This is a sample document used for testing the ingestion pipeline.
+The quick brown fox jumps over the lazy dog.
+Retrieval-augmented generation combines retrieval with language models.
+
+Page 2: Details
+Pgvector enables efficient similarity search in Postgres.
+Hybrid search fuses vector similarity with keyword matching.
+Reciprocal rank fusion is a standard technique for combining rankings.

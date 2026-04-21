@@ -1,0 +1,7 @@
+# DocSage evaluation golden set.
+#
+# Populate with (question, expected_source, expected_page) triples against
+# a known corpus. Use `make eval` to score answer presence + citation
+# precision/recall. Empty at scaffold time.
+version: 1
+items: []
