@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "format": "prettier --write .",
-    "test": "vitest"
+    "test": "vitest",
+    "test:run": "vitest run"
   },
   "dependencies": {
     "@microsoft/fetch-event-source": "2.0.1",

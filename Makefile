@@ -37,7 +37,7 @@ dev:
 	wait
 
 test: test-unit test-integration
-	cd frontend && pnpm test --run
+	cd frontend && pnpm test:run
 
 test-unit:
 	cd backend && pytest tests/unit -v
