@@ -100,7 +100,7 @@ export function Chat() {
     setStreaming(true);
 
     const history = messages
-      .filter((m) => !m.error)
+      .filter((m) => !m.error && !m.streaming)
       .map((m) => ({ role: m.role, content: m.content }));
 
     const abort = new AbortController();

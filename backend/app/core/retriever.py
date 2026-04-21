@@ -1,4 +1,3 @@
-import asyncio
 from dataclasses import dataclass
 from typing import Any, Hashable
 
@@ -112,7 +111,7 @@ async def retrieve(
     rrf_k: int,
 ) -> list[RetrievedChunk]:
     # Run sequentially: SQLAlchemy async sessions do not support concurrent
-    # operations on the same connection (asyncio.gather would raise isce).
+    # operations on the same connection (asyncio.gather would raise an InvalidRequestError).
     vec_hits = await _vector_search(session, query_embedding, candidate_k)
     kw_hits = await _keyword_search(session, query, candidate_k)
 

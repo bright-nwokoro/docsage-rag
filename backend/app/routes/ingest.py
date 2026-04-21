@@ -29,6 +29,12 @@ async def ingest(
     if not data:
         raise HTTPException(status_code=400, detail="empty file")
 
+    MAX_PDF_BYTES = 25 * 1024 * 1024
+    if len(data) > MAX_PDF_BYTES:
+        raise HTTPException(
+            status_code=413, detail=f"file exceeds {MAX_PDF_BYTES // (1024*1024)} MB limit"
+        )
+
     with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
         tmp.write(data)
         tmp_path = Path(tmp.name)

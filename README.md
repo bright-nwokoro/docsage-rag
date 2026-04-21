@@ -106,7 +106,7 @@ TOP_K=5
 **Frontend (`frontend/.env.local`)**
 
 ```bash
-NEXT_PUBLIC_API_URL=http://localhost:8000
+API_URL=http://localhost:8000
 ```
 
 ## Project structure
@@ -254,7 +254,7 @@ Postgres storage is negligible (~50MB per 1,000 pages including embeddings).
 
 ## Deployment
 
-**Vercel (frontend):** one-click deploy from GitHub. Set `NEXT_PUBLIC_API_URL` to the Railway backend URL.
+**Vercel (frontend):** one-click deploy from GitHub. Set `API_URL` to the Railway backend URL.
 
 **Railway (backend + db):** provision a Postgres plugin, enable the `pgvector` extension, set env vars, deploy from the GitHub repo. See [`docs/DEPLOY.md`](docs/DEPLOY.md) for the step-by-step.
 
