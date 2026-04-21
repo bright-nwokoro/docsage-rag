@@ -2,10 +2,10 @@
 
 > A RAG chatbot over any set of PDFs. Ask questions, get answers with inline citations — never hallucinated references.
 
-**🔗 Live demo:** https://docsage.brightnwokoro.dev
+**🔗 Live demo:** [https://docsage.brightnwokoro.dev](https://docsage.brightnwokoro.dev)
 **👤 Built by:** [Bright Nwokoro](https://brightnwokoro.dev) · [hello@brightnwokoro.dev](mailto:hello@brightnwokoro.dev)
 
-![DocSage demo](./docs/demo.gif)
+DocSage demo
 
 ---
 
@@ -46,6 +46,7 @@ DocSage is the opinionated, production version. Every answer is forced through a
 
 ## Stack
 
+
 | Layer            | Tech                                                  |
 | ---------------- | ----------------------------------------------------- |
 | Frontend         | Next.js 14, React 18, TypeScript, Tailwind, shadcn/ui |
@@ -56,6 +57,7 @@ DocSage is the opinionated, production version. Every answer is forced through a
 | PDF parsing      | `pypdf` + `unstructured`                              |
 | Retrieval        | pgvector cosine + Postgres `tsvector` full-text       |
 | Hosting          | Vercel (frontend), Railway (backend + Postgres)       |
+
 
 ## Quick start
 
@@ -74,7 +76,7 @@ make migrate     # apply schema
 make dev         # run backend (8000) + frontend (3000)
 ```
 
-Open http://localhost:3000, upload a PDF, start asking questions.
+Open [http://localhost:3000](http://localhost:3000), upload a PDF, start asking questions.
 
 **Under the hood** (what `make dev` actually does):
 
@@ -165,8 +167,7 @@ docsage-rag/
 2. Backend extracts text per page (`pypdf`), then runs a semantic chunker that respects sentence boundaries — default ~400–500 tokens per chunk with ~64 token overlap.
 3. Each chunk is embedded with `text-embedding-3-small` (1536-dimensional vectors).
 4. Chunks are stored in Postgres:
-
-   ```sql
+  ```sql
    CREATE TABLE chunks (
      id              BIGSERIAL PRIMARY KEY,
      doc_id          UUID NOT NULL REFERENCES docs(id),
@@ -178,7 +179,7 @@ docsage-rag/
    );
    CREATE INDEX ON chunks USING ivfflat (embedding vector_cosine_ops);
    CREATE INDEX ON chunks USING GIN (content_tsv);
-   ```
+  ```
 
 ### Retrieval
 
@@ -243,12 +244,14 @@ while keeping the UX fully streamed.
 
 Measured on the preloaded demo corpus (~300 pages across three docs):
 
-| Operation         | Cost (USD)       |
-| ----------------- | ---------------- |
-| Ingestion         | ~$0.01 per 100 pages |
-| Query — embedding | ~$0.00002 per question |
-| Query — chat      | ~$0.0018 per answer |
-| **Per query total** | **~$0.002** |
+
+| Operation           | Cost (USD)             |
+| ------------------- | ---------------------- |
+| Ingestion           | ~$0.01 per 100 pages   |
+| Query — embedding   | ~$0.00002 per question |
+| Query — chat        | ~$0.0018 per answer    |
+| **Per query total** | **~$0.002**            |
+
 
 Postgres storage is negligible (~50MB per 1,000 pages including embeddings).
 
@@ -256,16 +259,16 @@ Postgres storage is negligible (~50MB per 1,000 pages including embeddings).
 
 **Vercel (frontend):** one-click deploy from GitHub. Set `API_URL` to the Railway backend URL.
 
-**Railway (backend + db):** provision a Postgres plugin, enable the `pgvector` extension, set env vars, deploy from the GitHub repo. See [`docs/DEPLOY.md`](docs/DEPLOY.md) for the step-by-step.
+**Railway (backend + db):** provision a Postgres plugin, enable the `pgvector` extension, set env vars, deploy from the GitHub repo. See `[docs/DEPLOY.md](docs/DEPLOY.md)` for the step-by-step.
 
 ## Roadmap
 
-- [ ] Seed mode: ingest preloaded Next.js / Stripe / Kubernetes docs on deploy
-- [ ] Support for DOCX, TXT, MD, and HTML inputs
-- [ ] Multi-tenant isolation (one pgvector schema per client workspace)
-- [ ] Evaluation harness (RAGAS + custom golden set)
-- [ ] Re-ranker stage (Cohere Rerank or a local cross-encoder)
-- [ ] Self-hosted Ollama + pgvector mode for air-gapped clients
+- Seed mode: ingest preloaded Next.js / Stripe / Kubernetes docs on deploy
+- Support for DOCX, TXT, MD, and HTML inputs
+- Multi-tenant isolation (one pgvector schema per client workspace)
+- Evaluation harness (RAGAS + custom golden set)
+- Re-ranker stage (Cohere Rerank or a local cross-encoder)
+- Self-hosted Ollama + pgvector mode for air-gapped clients
 
 ## Contributing
 
@@ -278,6 +281,6 @@ MIT — see [LICENSE](LICENSE).
 ## Contact
 
 Freelance AI engineering — RAG, chat widgets, AI copilots, end-to-end.
-**Email:** hello@brightnwokoro.dev
-**Portfolio:** https://brightnwokoro.dev
-**Book a call:** https://calendly.com/brightnwokoro/intro
+**Email:** [hello@brightnwokoro.dev](mailto:hello@brightnwokoro.dev)
+**Portfolio:** [https://brightnwokoro.dev](https://brightnwokoro.dev)
+**Book a call:** [https://calendly.com/brightnwokoro/30min](https://calendly.com/brightnwokoro/30min)
