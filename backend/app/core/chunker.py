@@ -128,6 +128,16 @@ def chunk_text(
     return chunks
 
 
+def _sanitize(text: str) -> str:
+    """Strip NUL bytes (Postgres TEXT rejects them) and normalise whitespace.
+
+    pypdf emits \\x00 when it can't decode a character (e.g. `fi`/`fl` ligatures
+    in PDFs with non-embedded fonts). Dropping those bytes is the least-bad
+    option — the surrounding text stays intact and readable.
+    """
+    return text.replace("\x00", "")
+
+
 def parse_pdf(path: str | Path) -> list[tuple[int, str]]:
     """Extract text per page from a PDF. Returns list of (page_number, text).
 
@@ -140,7 +150,7 @@ def parse_pdf(path: str | Path) -> list[tuple[int, str]]:
     reader = pypdf.PdfReader(str(path))
     pages: list[tuple[int, str]] = []
     for i, page in enumerate(reader.pages, start=1):
-        text = (page.extract_text() or "").strip()
+        text = _sanitize(page.extract_text() or "").strip()
         if text:
             pages.append((i, text))
 
@@ -155,7 +165,7 @@ def parse_pdf(path: str | Path) -> list[tuple[int, str]]:
         per_page: dict[int, list[str]] = {}
         for el in elements:
             page_num = getattr(el.metadata, "page_number", None) or 1
-            el_text = str(el).strip()
+            el_text = _sanitize(str(el)).strip()
             if el_text:
                 per_page.setdefault(page_num, []).append(el_text)
         return [(p, " ".join(per_page[p])) for p in sorted(per_page.keys())]
