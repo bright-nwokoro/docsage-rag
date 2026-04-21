@@ -1,5 +1,6 @@
 import os
 import subprocess
+import sys
 from collections.abc import AsyncIterator, Iterator
 
 import pytest
@@ -18,8 +19,13 @@ os.environ.setdefault(
 
 @pytest.fixture(scope="session", autouse=True)
 def ensure_db_migrated() -> Iterator[None]:
-    """Run `alembic upgrade head` once per session."""
-    subprocess.run(["alembic", "upgrade", "head"], check=True, cwd=".")
+    """Run `alembic upgrade head` once per session.
+
+    Resolves the alembic CLI from the same venv as the running Python so the
+    fixture works whether or not the user has the venv activated in their shell.
+    """
+    alembic_bin = os.path.join(os.path.dirname(sys.executable), "alembic")
+    subprocess.run([alembic_bin, "upgrade", "head"], check=True, cwd=".")
     yield
 
 
