@@ -46,11 +46,11 @@ def test_chunks_have_overlap_between_consecutive():
 
 def test_multi_page_preserves_page_numbers():
     pages = [
-        (1, "Page one content. Another sentence on page one."),
-        (2, "Page two content. Another sentence on page two."),
-        (3, "Page three content. Another sentence on page three."),
+        (1, "Page one content. Another sentence on page one. " * 10),
+        (2, "Page two content. Another sentence on page two. " * 10),
+        (3, "Page three content. Another sentence on page three. " * 10),
     ]
-    chunks = chunk_text(pages, max_tokens=512, overlap_tokens=64)
+    chunks = chunk_text(pages, max_tokens=50, overlap_tokens=10)
     page_numbers = {c.page_number for c in chunks}
     assert page_numbers == {1, 2, 3}
 
