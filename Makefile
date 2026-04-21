@@ -1,8 +1,12 @@
 .PHONY: help up down migrate dev test test-unit test-integration eval seed clean fmt lint install
 
+PY      ?= python3.11
+VENV    := backend/.venv
+VBIN    := $(VENV)/bin
+
 help:
 	@echo "DocSage Makefile targets:"
-	@echo "  make install           Install backend + frontend deps"
+	@echo "  make install           Install backend (.venv) + frontend deps"
 	@echo "  make up                Start Postgres (Docker)"
 	@echo "  make down              Stop Postgres (keeps volume)"
 	@echo "  make migrate           Run Alembic migrations"
@@ -16,8 +20,12 @@ help:
 	@echo "  make lint              Lint code"
 	@echo "  make clean             Stop Postgres and delete volume"
 
-install:
-	cd backend && pip install -r requirements.txt -r requirements-dev.txt
+$(VBIN)/pip:
+	$(PY) -m venv $(VENV)
+	$(VBIN)/pip install --upgrade pip
+
+install: $(VBIN)/pip
+	$(VBIN)/pip install -r backend/requirements.txt -r backend/requirements-dev.txt
 	cd frontend && pnpm install
 
 up:
@@ -27,12 +35,12 @@ down:
 	docker compose down
 
 migrate:
-	cd backend && alembic upgrade head
+	cd backend && ../$(VBIN)/alembic upgrade head
 
 dev:
 	@echo "Starting backend (8000) and frontend (3000)..."
 	@trap 'kill 0' INT; \
-	(cd backend && uvicorn app.main:app --reload --port 8000) & \
+	(cd backend && ../$(VBIN)/uvicorn app.main:app --reload --port 8000) & \
 	(cd frontend && pnpm dev) & \
 	wait
 
@@ -40,23 +48,23 @@ test: test-unit test-integration
 	cd frontend && pnpm test:run
 
 test-unit:
-	cd backend && pytest tests/unit -v
+	cd backend && ../$(VBIN)/pytest tests/unit -v
 
 test-integration:
-	cd backend && pytest tests/integration -v
+	cd backend && ../$(VBIN)/pytest tests/integration -v
 
 eval:
-	cd backend && python tests/eval/run_eval.py
+	cd backend && ../$(VBIN)/python tests/eval/run_eval.py
 
 seed:
 	@echo "Seed mode deferred — see docs/superpowers/specs/2026-04-21-docsage-rag-design.md"
 
 fmt:
-	cd backend && ruff format app tests
+	cd backend && ../$(VBIN)/ruff format app tests
 	cd frontend && pnpm format
 
 lint:
-	cd backend && ruff check app tests
+	cd backend && ../$(VBIN)/ruff check app tests
 	cd frontend && pnpm lint
 
 clean:
