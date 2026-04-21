@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-21
 **Status:** Approved — ready for implementation plan
-**Source spec:** [`README.md`](../../../README.md)
+**Source spec:** `[README.md](../../../README.md)`
 
 The [README](../../../README.md) is the user-facing product spec. This document resolves the implementation decisions the README leaves open and locks in the defaults we will build against.
 
@@ -27,17 +27,19 @@ Build DocSage end-to-end locally so `make up && make migrate && make dev` gives 
 
 ## Resolved decisions
 
-| Question | Decision |
-|---|---|
-| Build target | Full end-to-end working locally (backend + frontend + Docker Postgres) |
-| OpenAI key | Real API calls during development |
-| Postgres setup | Docker Compose with `pgvector/pgvector:pg16` |
-| Seed mode | Defer — placeholder script only |
-| Streaming + structured output | Partial-JSON streaming, server parses incrementally, emits SSE events |
-| Workspace model | Single pool, no auth, no per-user isolation |
-| Chat memory | Stateless backend, client passes history |
-| Package managers | `pip` + `requirements.txt` (backend), `pnpm` (frontend) |
-| Streaming transport | SSE (Server-Sent Events), not WebSockets |
+
+| Question                      | Decision                                                               |
+| ----------------------------- | ---------------------------------------------------------------------- |
+| Build target                  | Full end-to-end working locally (backend + frontend + Docker Postgres) |
+| OpenAI key                    | Real API calls during development                                      |
+| Postgres setup                | Docker Compose with `pgvector/pgvector:pg16`                           |
+| Seed mode                     | Defer — placeholder script only                                        |
+| Streaming + structured output | Partial-JSON streaming, server parses incrementally, emits SSE events  |
+| Workspace model               | Single pool, no auth, no per-user isolation                            |
+| Chat memory                   | Stateless backend, client passes history                               |
+| Package managers              | `pip` + `requirements.txt` (backend), `pnpm` (frontend)                |
+| Streaming transport           | SSE (Server-Sent Events), not WebSockets                               |
+
 
 ## Repo layout
 
@@ -128,17 +130,19 @@ Every core module has either zero external dependencies (pure) or exactly one (O
 
 ### Modules
 
-| Module | Responsibility | External deps |
-|---|---|---|
-| `core/chunker.py` | `chunk_pdf(path) -> list[Chunk]`. Sentence-aware, token-budgeted. | None (pure) |
-| `core/embeddings.py` | `embed_batch(list[str]) -> list[list[float]]`. Batched, retried. | OpenAI |
-| `core/retriever.py` | `retrieve(query, top_k) -> list[RetrievedChunk]`. Parallel vector+keyword, RRF fusion. | DB, OpenAI (for query embedding) |
-| `core/citations.py` | Schema, system prompt, post-hoc verifier. | None (pure) |
-| `core/generator.py` | Streams OpenAI completion, parses partial JSON, yields SSE events. | OpenAI |
-| `routes/ingest.py` | Orchestrates chunk → embed → DB insert in one transaction. | DB, core modules |
-| `routes/query.py` | Orchestrates retrieve → generate, streams SSE. | DB, core modules |
-| `routes/docs.py` | List/delete operations. | DB |
-| `models.py` | SQLAlchemy 2.0 models for `docs` and `chunks`. | DB |
+
+| Module               | Responsibility                                                                         | External deps                    |
+| -------------------- | -------------------------------------------------------------------------------------- | -------------------------------- |
+| `core/chunker.py`    | `chunk_pdf(path) -> list[Chunk]`. Sentence-aware, token-budgeted.                      | None (pure)                      |
+| `core/embeddings.py` | `embed_batch(list[str]) -> list[list[float]]`. Batched, retried.                       | OpenAI                           |
+| `core/retriever.py`  | `retrieve(query, top_k) -> list[RetrievedChunk]`. Parallel vector+keyword, RRF fusion. | DB, OpenAI (for query embedding) |
+| `core/citations.py`  | Schema, system prompt, post-hoc verifier.                                              | None (pure)                      |
+| `core/generator.py`  | Streams OpenAI completion, parses partial JSON, yields SSE events.                     | OpenAI                           |
+| `routes/ingest.py`   | Orchestrates chunk → embed → DB insert in one transaction.                             | DB, core modules                 |
+| `routes/query.py`    | Orchestrates retrieve → generate, streams SSE.                                         | DB, core modules                 |
+| `routes/docs.py`     | List/delete operations.                                                                | DB                               |
+| `models.py`          | SQLAlchemy 2.0 models for `docs` and `chunks`.                                         | DB                               |
+
 
 ### Database schema
 
@@ -173,13 +177,15 @@ CREATE INDEX chunks_doc_id_idx    ON chunks (doc_id);
 
 ### API surface
 
-| Method | Path | Request | Response |
-|---|---|---|---|
-| `POST` | `/ingest` | `multipart/form-data` with `file` | `{doc_id, filename, chunk_count, page_count}` |
-| `POST` | `/query` | `{question: str, history: [{role, content}]}` | `text/event-stream` |
-| `GET` | `/docs` | — | `[{id, filename, page_count, uploaded_at}]` |
-| `DELETE` | `/docs/{id}` | — | `204` |
-| `GET` | `/health` | — | `{status: "ok"}` |
+
+| Method   | Path         | Request                                       | Response                                      |
+| -------- | ------------ | --------------------------------------------- | --------------------------------------------- |
+| `POST`   | `/ingest`    | `multipart/form-data` with `file`             | `{doc_id, filename, chunk_count, page_count}` |
+| `POST`   | `/query`     | `{question: str, history: [{role, content}]}` | `text/event-stream`                           |
+| `GET`    | `/docs`      | —                                             | `[{id, filename, page_count, uploaded_at}]`   |
+| `DELETE` | `/docs/{id}` | —                                             | `204`                                         |
+| `GET`    | `/health`    | —                                             | `{status: "ok"}`                              |
+
 
 ## Ingestion pipeline
 
@@ -198,6 +204,7 @@ CREATE INDEX chunks_doc_id_idx    ON chunks (doc_id);
 Two queries run concurrently via `asyncio.gather`, each returning top-20 candidates:
 
 **Vector:**
+
 ```sql
 SELECT id, doc_id, page_number, content, embedding <=> :q_emb AS distance
 FROM chunks
@@ -206,6 +213,7 @@ LIMIT 20;
 ```
 
 **Keyword:**
+
 ```sql
 SELECT id, doc_id, page_number, content,
        ts_rank(content_tsv, plainto_tsquery('english', :q)) AS rank
@@ -258,7 +266,7 @@ async for delta in openai_client.chat.completions.create(
 
 Deltas form a growing JSON string that is almost-always-invalid until the last token. Parsed incrementally with a partial-JSON parser (pick the maintained package at implementation: `partial-json-parser` or equivalent). On each parser advance:
 
-- **`answer` grew:** emit `event: answer_delta` with the new character diff.
+- `**answer` grew:** emit `event: answer_delta` with the new character diff.
 - **New complete citation in `citations[]`:** emit `event: citation` with `{source, page, score}`.
 - **Stream end:** run the verifier (drop any `(source, page)` not in the retrieved set), emit `event: done` with `{verified_citations: [...]}`.
 
@@ -300,13 +308,15 @@ Single-page app, App Router, no auth.
 
 ### Components
 
-| Component | Responsibility |
-|---|---|
-| `Chat.tsx` | Owns conversation state (reducer), opens SSE connection on submit, dispatches events to update messages. |
-| `Message.tsx` | One chat bubble. Renders streaming answer text, citation chips, error state. |
-| `CitationChip.tsx` | Pill showing `[{source} p.{page}]`. Hover reveals score. Click expands chunk content inline. |
-| `PdfDrop.tsx` | react-dropzone wrapper. Multipart upload to `/api/ingest`. Per-file progress + success/error. |
-| `DocList.tsx` | Lists uploaded docs, delete button per row. Polls `/api/docs` on mount + after uploads. |
+
+| Component          | Responsibility                                                                                           |
+| ------------------ | -------------------------------------------------------------------------------------------------------- |
+| `Chat.tsx`         | Owns conversation state (reducer), opens SSE connection on submit, dispatches events to update messages. |
+| `Message.tsx`      | One chat bubble. Renders streaming answer text, citation chips, error state.                             |
+| `CitationChip.tsx` | Pill showing `[{source} p.{page}]`. Hover reveals score. Click expands chunk content inline.             |
+| `PdfDrop.tsx`      | react-dropzone wrapper. Multipart upload to `/api/ingest`. Per-file progress + success/error.            |
+| `DocList.tsx`      | Lists uploaded docs, delete button per row. Polls `/api/docs` on mount + after uploads.                  |
+
 
 ### API proxy layer
 
@@ -408,3 +418,4 @@ No other README changes — the product description, architecture diagram, and r
 - Ollama / self-hosted mode (roadmap).
 - Real seed docs (deferred; script placeholder only).
 - Production Dockerfile for the backend (deploy-time concern).
+
