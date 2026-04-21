@@ -1,4 +1,12 @@
-from app.core.chunker import Chunk, chunk_text
+from app.core.chunker import Chunk, _sanitize, chunk_text
+
+
+def test_sanitize_strips_nul_bytes():
+    # pypdf emits \x00 for characters it can't decode (e.g. `fi` ligature).
+    # Postgres TEXT columns reject NUL bytes, so we drop them at parse time.
+    assert _sanitize("De\x00 Saver") == "De Saver"
+    assert _sanitize("\x00nding\x00") == "nding"
+    assert _sanitize("clean text") == "clean text"
 
 
 def test_single_short_page_produces_one_chunk():
