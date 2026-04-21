@@ -3,7 +3,7 @@ import os
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from sqlalchemy import func, select, text
+from sqlalchemy import NullPool, func, select, text
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.models import Chunk, Doc
@@ -47,7 +47,9 @@ async def test_ingest_inserts_doc_and_chunks(client, clean_db, monkeypatch):
     assert body["chunk_count"] >= 1
     assert body["page_count"] >= 1
 
-    engine = create_async_engine(os.environ["DATABASE_URL"])
+    # NullPool avoids asyncpg connections crossing event-loop boundaries in the
+    # test suite (each pytest-asyncio test gets its own loop).
+    engine = create_async_engine(os.environ["DATABASE_URL"], poolclass=NullPool)
     async with engine.connect() as conn:
         doc_count = (await conn.execute(select(func.count()).select_from(Doc))).scalar_one()
         chunk_count = (await conn.execute(select(func.count()).select_from(Chunk))).scalar_one()
