@@ -129,19 +129,38 @@ def chunk_text(
 
 
 def parse_pdf(path: str | Path) -> list[tuple[int, str]]:
-    """Extract text per page from a PDF. Returns list of (page_number, text)."""
-    from unstructured.partition.pdf import partition_pdf
+    """Extract text per page from a PDF. Returns list of (page_number, text).
 
-    elements = partition_pdf(filename=str(path), strategy="fast")
+    Uses pypdf for extraction. Falls back to unstructured if pypdf yields no
+    text (e.g. scanned images), which requires unstructured[pdf] to be installed.
+    """
+    import pypdf
 
-    per_page: dict[int, list[str]] = {}
-    for el in elements:
-        page = getattr(el.metadata, "page_number", None) or 1
-        text = str(el).strip()
+    path = Path(path)
+    reader = pypdf.PdfReader(str(path))
+    pages: list[tuple[int, str]] = []
+    for i, page in enumerate(reader.pages, start=1):
+        text = (page.extract_text() or "").strip()
         if text:
-            per_page.setdefault(page, []).append(text)
+            pages.append((i, text))
 
-    return [(p, " ".join(per_page[p])) for p in sorted(per_page.keys())]
+    if pages:
+        return pages
+
+    # Fallback: unstructured (handles scanned PDFs via OCR if tesseract is present)
+    try:
+        from unstructured.partition.pdf import partition_pdf
+
+        elements = partition_pdf(filename=str(path), strategy="fast")
+        per_page: dict[int, list[str]] = {}
+        for el in elements:
+            page_num = getattr(el.metadata, "page_number", None) or 1
+            el_text = str(el).strip()
+            if el_text:
+                per_page.setdefault(page_num, []).append(el_text)
+        return [(p, " ".join(per_page[p])) for p in sorted(per_page.keys())]
+    except Exception:
+        return []
 
 
 def chunk_pdf(
