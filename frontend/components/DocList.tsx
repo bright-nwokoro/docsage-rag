@@ -39,7 +39,7 @@ export function DocList({ refreshKey }: Props) {
   return (
     <ul className="space-y-1">
       {docs.map((d) => (
-        <li key={d.id} className="flex items-center gap-2 rounded px-2 py-1.5 hover:bg-slate-50">
+        <li key={d.id} className="group flex items-center gap-2 rounded px-2 py-1.5 hover:bg-slate-50">
           <FileText className="h-4 w-4 shrink-0 text-slate-400" />
           <span className="flex-1 truncate text-sm" title={d.filename}>
             {d.filename}
