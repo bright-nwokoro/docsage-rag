@@ -111,9 +111,10 @@ async def retrieve(
     top_k: int,
     rrf_k: int,
 ) -> list[RetrievedChunk]:
-    vec_task = _vector_search(session, query_embedding, candidate_k)
-    kw_task = _keyword_search(session, query, candidate_k)
-    vec_hits, kw_hits = await asyncio.gather(vec_task, kw_task)
+    # Run sequentially: SQLAlchemy async sessions do not support concurrent
+    # operations on the same connection (asyncio.gather would raise isce).
+    vec_hits = await _vector_search(session, query_embedding, candidate_k)
+    kw_hits = await _keyword_search(session, query, candidate_k)
 
     fused = rrf_fuse([vec_hits, kw_hits], k=rrf_k, top_k=top_k)
     out: list[RetrievedChunk] = []
