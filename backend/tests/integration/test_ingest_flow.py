@@ -28,8 +28,8 @@ async def test_ingest_inserts_doc_and_chunks(client, clean_db, monkeypatch):
     fake_openai.embeddings = MagicMock()
     fake_openai.embeddings.create = AsyncMock(side_effect=fake_create)
 
-    from app.core import openai_client as oc
     import app.routes.ingest as ingest_route
+    from app.core import openai_client as oc
 
     oc.get_openai_client.cache_clear()
     monkeypatch.setattr(oc, "get_openai_client", lambda: fake_openai)

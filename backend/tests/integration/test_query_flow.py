@@ -78,8 +78,8 @@ async def test_query_streams_answer_and_citations(client, clean_db, monkeypatch)
     fake_openai.chat.completions = MagicMock()
     fake_openai.chat.completions.create = AsyncMock(side_effect=fake_chat_create)
 
-    from app.core import openai_client as oc
     import app.routes.query as query_route
+    from app.core import openai_client as oc
 
     oc.get_openai_client.cache_clear()
     monkeypatch.setattr(oc, "get_openai_client", lambda: fake_openai)

@@ -95,7 +95,7 @@ async def generate_stream(
                     if not (
                         isinstance(src, str)
                         and isinstance(page, int)
-                        and isinstance(score, (int, float))
+                        and isinstance(score, int | float)
                     ):
                         continue
                     key = (src, page)
